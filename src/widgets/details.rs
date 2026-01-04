@@ -1,7 +1,7 @@
 use ratatui::{
     prelude::*,
     text::Line,
-    widgets::{Borders, Padding, Paragraph, Widget},
+    widgets::{Borders, Paragraph, Widget},
 };
 use serde_json::Value;
 

@@ -1,7 +1,7 @@
 use ratatui::{
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Borders, StatefulWidget},
+    widgets::{Borders, StatefulWidget, Widget},
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
@@ -35,12 +35,18 @@ impl<'a> StatefulWidget for TreeWidget<'a> {
         let highlight_style = Style::default()
             .fg(ratatui::style::Color::Black)
             .bg(ratatui::style::Color::LightCyan);
-        let tree_widget = Tree::new(self.items)
-            .unwrap()
-            .block(block)
-            .highlight_style(highlight_style)
-            .highlight_symbol(">> ");
 
-        tree_widget.render(area, buf, state);
+        match Tree::new(self.items) {
+            Ok(tree) => {
+                let tree_widget = tree
+                    .block(block)
+                    .highlight_style(highlight_style)
+                    .highlight_symbol(">> ");
+                StatefulWidget::render(tree_widget, area, buf, state);
+            }
+            Err(_) => {
+                Widget::render(block, area, buf);
+            }
+        }
     }
 }

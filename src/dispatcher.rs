@@ -1,4 +1,5 @@
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::error;
 
 use crate::{action::Action, app::App, state::WidgetFocus};
 
@@ -20,8 +21,8 @@ impl Dispatcher {
                     state.should_quit = true;
                 }
                 Action::Reload => {
-                    if app.reload().await.is_err() {
-                        // TODO: error handling
+                    if let Err(e) = app.reload().await {
+                        error!("Failed to reload application state: {}", e);
                     }
                 }
                 Action::SwitchFocus => match state.widget_focus {
@@ -52,8 +53,8 @@ impl Dispatcher {
                     state.should_quit = true;
                 }
                 Action::Reload => {
-                    if app.reload().await.is_err() {
-                        // TODO: error handling
+                    if let Err(e) = app.reload().await {
+                        error!("Failed to reload application state: {}", e);
                     }
                 }
                 Action::SwitchFocus => {}

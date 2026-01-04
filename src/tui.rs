@@ -3,8 +3,9 @@ use crate::event::EventHandler;
 use crate::ui;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::Terminal;
 use ratatui::backend::Backend;
+use ratatui::Terminal;
+use tracing::error;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TuiError {
@@ -48,44 +49,42 @@ impl<B: Backend> Tui<B> {
     }
 
     pub fn enter(&mut self) -> Result<(), TuiError> {
-        terminal::enable_raw_mode().map_err(|err| TuiError::EnableRawMode(err))?;
+        terminal::enable_raw_mode().map_err(TuiError::EnableRawMode)?;
         crossterm::execute!(std::io::stdout(), EnterAlternateScreen, EnableMouseCapture)
-            .map_err(|err| TuiError::EnterAlternateScreen(err))?;
+            .map_err(TuiError::EnterAlternateScreen)?;
 
         self.terminal
             .hide_cursor()
-            .map_err(|err| TuiError::HideCursor(err))?;
-        self.terminal
-            .clear()
-            .map_err(|err| TuiError::ClearScreen(err))?;
+            .map_err(TuiError::HideCursor)?;
+        self.terminal.clear().map_err(TuiError::ClearScreen)?;
         Ok(())
     }
 
     pub fn draw(&mut self, app: &mut App) -> Result<(), TuiError> {
         self.terminal
             .draw(|frame| ui::render_screen(app, frame))
-            .map_err(|err| TuiError::Rendering(err))?;
+            .map_err(TuiError::Rendering)?;
         Ok(())
     }
 
     fn reset() -> Result<(), TuiError> {
-        terminal::disable_raw_mode().map_err(|err| TuiError::DisableRawMode(err))?;
+        terminal::disable_raw_mode().map_err(TuiError::DisableRawMode)?;
         crossterm::execute!(std::io::stdout(), LeaveAlternateScreen, DisableMouseCapture)
-            .map_err(|err| TuiError::LeaveAlternateScreen(err))?;
+            .map_err(TuiError::LeaveAlternateScreen)?;
         Ok(())
     }
 
     pub fn exit(&mut self) -> Result<(), TuiError> {
         Self::reset()?;
-        self.terminal
-            .show_cursor()
-            .map_err(|err| TuiError::ShowCursor(err))?;
+        self.terminal.show_cursor().map_err(TuiError::ShowCursor)?;
         Ok(())
     }
 }
 
 impl<B: ratatui::backend::Backend> Drop for Tui<B> {
     fn drop(&mut self) {
-        self.exit().expect("failed to reset terminal");
+        if let Err(e) = self.exit() {
+            error!("failed to reset terminal: {}", e);
+        }
     }
 }

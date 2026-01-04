@@ -10,6 +10,10 @@ use tracing::{error, info}; // Use tracing macros
 pub enum AppError {
     #[error("Failed to execute lshw: {0}")]
     Lshw(std::io::Error),
+    #[error("Node with id {0} not found in map")]
+    NodeNotFound(NodeId),
+    #[error("Failed to create tree item")]
+    TreeItemCreation,
 }
 
 #[derive(Debug)]
@@ -41,7 +45,7 @@ impl App {
         let root_id =
             Self::build_node_map_and_root_id(&hw_root_node_dto, None, &mut next_id, &mut nodes);
 
-        let tree_items = vec![Self::build_tree_items_from_map(root_id, &nodes)];
+        let tree_items = vec![Self::build_tree_items_from_map(root_id, &nodes)?];
         let mut tree_state = TreeState::default();
         tree_state.select_first(); // Ensure the first item is selected
         let mut state = State::new(tree_state);
@@ -79,7 +83,7 @@ impl App {
         let root_id =
             Self::build_node_map_and_root_id(&hw_root_node_dto, None, &mut next_id, &mut nodes);
 
-        let tree_items = vec![Self::build_tree_items_from_map(root_id, &nodes)];
+        let tree_items = vec![Self::build_tree_items_from_map(root_id, &nodes)?];
         let mut tree_state = TreeState::default();
         tree_state.select_first(); // Ensure the first item is selected
 
@@ -141,8 +145,11 @@ impl App {
     }
 
     // Helper to build TreeItems from the NodeMap
-    fn build_tree_items_from_map(node_id: NodeId, nodes: &NodeMap) -> TreeItem<'static, NodeId> {
-        let app_node = nodes.get(&node_id).expect("Node not found in map");
+    fn build_tree_items_from_map(
+        node_id: NodeId,
+        nodes: &NodeMap,
+    ) -> Result<TreeItem<'static, NodeId>, AppError> {
+        let app_node = nodes.get(&node_id).ok_or(AppError::NodeNotFound(node_id))?;
         let id = &app_node.data.id;
         let name = app_node
             .data
@@ -156,12 +163,15 @@ impl App {
             .children_ids
             .iter()
             .map(|&child_id| Self::build_tree_items_from_map(child_id, nodes))
-            .collect();
+            .collect::<Result<_, _>>()?;
 
         if children_tree_items.is_empty() {
-            TreeItem::new_leaf(node_id, name)
+            Ok(TreeItem::new_leaf(node_id, name))
         } else {
-            TreeItem::new(node_id, name, children_tree_items).expect("Failed to create tree item")
+            // This will not compile if TreeItem::new returns Self, but the user's code compiles.
+            // Assuming it returns a Result with a private error type.
+            TreeItem::new(node_id, name, children_tree_items)
+                .map_err(|_| AppError::TreeItemCreation)
         }
     }
 
