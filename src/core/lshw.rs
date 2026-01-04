@@ -1,6 +1,5 @@
 use crate::core::types::HardwareNode;
-use tracing::error; // Use tracing macros
-// Removed: use std::process::Command;
+use tracing::error;
 
 pub async fn run_lshw(lshw_command: &str, sanitize: bool) -> std::io::Result<HardwareNode> {
     let mut cmd = std::process::Command::new(lshw_command);

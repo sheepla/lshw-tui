@@ -1,9 +1,9 @@
 use ratatui::{
     prelude::*,
     text::Line,
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Borders, Padding, Paragraph, Widget},
 };
-use serde_json::Value; // Add this import
+use serde_json::Value;
 
 use crate::core::types::HardwareNode;
 
@@ -19,12 +19,21 @@ impl<'a> DetailsWidget<'a> {
 
 impl<'a> Widget for DetailsWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let details_block = Block::default().borders(Borders::ALL).title("Details");
+        let block = ratatui::widgets::Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray))
+            .title_alignment(Alignment::Center)
+            .title_style(Style::new().fg(Color::White))
+            .title(" Details ");
 
-        let details_widget = if let Some(node) = self.node {
+        let paragraph = if let Some(node) = self.node {
             let mut lines = Vec::new();
             add_line("ID", &Some(Value::String(node.id.clone())), &mut lines);
-            add_line("Class", &Some(Value::String(node.class.clone())), &mut lines);
+            add_line(
+                "Class",
+                &Some(Value::String(node.class.clone())),
+                &mut lines,
+            );
             add_line("Description", &node.description, &mut lines);
             add_line("Product", &node.product, &mut lines);
             add_line("Vendor", &node.vendor, &mut lines);
@@ -47,13 +56,12 @@ impl<'a> Widget for DetailsWidget<'a> {
             add_line("Capabilities", &node.capabilities, &mut lines);
             add_line("Configuration", &node.configuration, &mut lines);
 
-
-            Paragraph::new(lines).block(details_block)
+            Paragraph::new(lines).block(block)
         } else {
-            Paragraph::new("No item selected").block(details_block)
+            Paragraph::new("No item selected").block(block)
         };
 
-        details_widget.render(area, buf);
+        paragraph.render(area, buf);
     }
 }
 

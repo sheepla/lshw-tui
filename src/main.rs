@@ -80,8 +80,8 @@ async fn main() -> eyre::Result<()> {
                 dispatcher.dispatch(&mut app, action).await;
             }
 
-            res = tui.events.next() => {
-                if let Some(event) = res {
+            maybe_event = tui.events.next() => {
+                if let Some(event) = maybe_event {
                     match event {
                         TerminalEvent::Tick => {
                             app.tick();
