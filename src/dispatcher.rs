@@ -20,7 +20,9 @@ impl Dispatcher {
                     state.should_quit = true;
                 }
                 Action::Reload => {
-                    // TODO lshwを再実行してデータを更新する
+                    if app.reload().await.is_err() {
+                        // TODO: error handling
+                    }
                 }
                 Action::SwitchFocus => match state.widget_focus {
                     WidgetFocus::TreeView => state.widget_focus = WidgetFocus::Details,
@@ -49,7 +51,11 @@ impl Dispatcher {
                 Action::Quit => {
                     state.should_quit = true;
                 }
-                Action::Reload => {}
+                Action::Reload => {
+                    if app.reload().await.is_err() {
+                        // TODO: error handling
+                    }
+                }
                 Action::SwitchFocus => {}
                 Action::Up => {}
                 Action::Down => {}
