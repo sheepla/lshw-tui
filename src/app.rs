@@ -36,7 +36,8 @@ impl App {
 
         let mut nodes = NodeMap::new();
         let mut next_id = 0;
-        let root_id = Self::build_node_map_and_root_id(&hw_root_node_dto, None, &mut next_id, &mut nodes);
+        let root_id =
+            Self::build_node_map_and_root_id(&hw_root_node_dto, None, &mut next_id, &mut nodes);
 
         let tree_items = vec![Self::build_tree_items_from_map(root_id, &nodes)];
         let mut tree_state = TreeState::default();
@@ -99,18 +100,19 @@ impl App {
     }
 
     // Helper to build TreeItems from the NodeMap
-    fn build_tree_items_from_map(
-        node_id: NodeId,
-        nodes: &NodeMap,
-    ) -> TreeItem<'static, NodeId> {
+    fn build_tree_items_from_map(node_id: NodeId, nodes: &NodeMap) -> TreeItem<'static, NodeId> {
         let app_node = nodes.get(&node_id).expect("Node not found in map");
-        let name = app_node.data.description
-            .as_ref() // Option<&Value>
-            .and_then(|v| v.as_str()) // Option<&str>
-            .map(|s| s.to_string()) // Option<String>
-            .unwrap_or_else(|| app_node.data.id.clone()); // Fallback to id if description is None or not a string
+        let id = &app_node.data.id;
+        let name = app_node
+            .data
+            .description
+            .as_ref()
+            .and_then(|v| v.as_str())
+            .map(|s| format!("[{}] {}", id, s))
+            .unwrap_or_else(|| id.clone());
 
-        let children_tree_items: Vec<TreeItem<'static, NodeId>> = app_node.children_ids
+        let children_tree_items: Vec<TreeItem<'static, NodeId>> = app_node
+            .children_ids
             .iter()
             .map(|&child_id| Self::build_tree_items_from_map(child_id, nodes))
             .collect();
@@ -118,8 +120,7 @@ impl App {
         if children_tree_items.is_empty() {
             TreeItem::new_leaf(node_id, name)
         } else {
-            TreeItem::new(node_id, name, children_tree_items)
-                .expect("Failed to create tree item")
+            TreeItem::new(node_id, name, children_tree_items).expect("Failed to create tree item")
         }
     }
 

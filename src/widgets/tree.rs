@@ -1,7 +1,7 @@
 use ratatui::{
     layout::Alignment,
-    style::{Color, Modifier, Style},
-    widgets::{Borders, Padding, StatefulWidget},
+    style::{Color, Style},
+    widgets::{Borders, StatefulWidget},
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
