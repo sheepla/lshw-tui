@@ -1,0 +1,59 @@
+on:
+  push:
+    tags:
+      - 'v*'
+
+name: Release Linux binary
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Determine binary name
+        id: bin
+        run: |
+          BIN_NAME=$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[0].targets[] | select(.kind[] | index("bin")) | .name' \
+            | head -n1)
+          echo "bin_name=$BIN_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build release (x86_64-unknown-linux-gnu)
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
+          cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          cp target/x86_64-unknown-linux-gnu/release/${{ steps.bin.outputs.bin_name }} dist/
+          tar -C dist -czf dist/${{ steps.bin.outputs.bin_name }}-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz ${{ steps.bin.outputs.bin_name }}
+
+      - name: Create release and upload artifact
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          files: dist/*.tar.gz
